@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="SMS Gateway" default="dist" basedir=".">
+	<description>
+		Build file for the SMS Gateway application.
+	</description>
+	
+	<target name="setProps">
+		<!-- set global properties for this build -->
+		<property environment="env"/>
+		
+		<property name="smsg.home" value="${env.SMSG_HOME}"/>
+		
+		<property name="smsg.src" location="${smsg.home}/src"/>
+		<property name="smsg.build" location="${smsg.home}/build"/>
+		<property name="smsg.dist" location="${smsg.build}/smsgate"/>
+		
+		<!-- Create filesets -->
+		<fileset id="smsg.config" dir="${smsg.src}/utils">
+			<include name="smsgate.cfg"/>
+		</fileset>
+		
+		<fileset id="smsg.exec" dir="${smsg.home}">
+			<include name="smsgate.sh"/>
+			<include name="smsgate.bat"/>
+		</fileset>
+		
+		<fileset id="smsg.libs" dir="${smsg.home}/libs">
+			<include name="*.jar"/>
+			<include name="*.dll"/>
+			<include name="*.properties"/>
+		</fileset>
+		
+		<fileset id="smsg.jars" dir="${smsg.build}/lib">
+			<include name="*.jar"/>
+		</fileset>
+
+		<fileset id="smsg.all" dir="${smsg.build}">
+			<include name="**/*"/>
+		</fileset>			
+
+	    <path id="classpath">
+	        <fileset refid="smsg.libs" />
+	    </path>
+
+	</target>
+	
+    <target name="init" depends="setProps">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${smsg.build}"/>
+		<mkdir dir="${smsg.build}/bin"/>
+		<mkdir dir="${smsg.build}/lib"/>
+		
+		<!-- Create the distribution directory -->
+		<mkdir dir="${smsg.dist}"/>
+		<mkdir dir="${smsg.dist}/lib"/>
+		<mkdir dir="${smsg.dist}/log"/>
+		<mkdir dir="${smsg.dist}/util"/>
+	</target>
+	
+	<target name="compile" depends="init" description="Compile the source code.">
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac source="1.8" target="1.8" srcdir="${smsg.src}" destdir="${smsg.build}/bin" debug="true" includeantruntime="false">
+		    <classpath refid="classpath" />
+		</javac>
+	</target>
+	
+	<target name="build" depends="compile" description="Builds the JAR." >
+		<jar jarfile="${smsg.build}/lib/smsgate.jar" basedir="${smsg.build}/bin"/>
+	</target>
+	
+	<target name="dist" depends="build" description="Generate the distribution package.">
+		
+		<!-- Copy files across -->
+		<copy file="${smsg.home}/database/create_database_mysql.sql" tofile="${smsg.dist}/util/create_database_mysql.sql" verbose="true"/>
+
+		<copy todir="${smsg.dist}" verbose="true">
+			<fileset refid="smsg.config"/>
+  		</copy>
+				
+		<copy todir="${smsg.dist}" verbose="true">
+			<fileset refid="smsg.exec"/>
+  		</copy>
+				
+		<copy todir="${smsg.dist}/lib" verbose="true">
+			<fileset refid="smsg.jars"/>
+			<fileset refid="smsg.libs"/>
+  		</copy>
+						
+		<!-- Change permissions to htdocs directory -->
+		<chmod perm="755" type="both">
+			<fileset refid="smsg.all"/>
+		</chmod>
+	</target>
+	
+	<target name="clean" depends="setProps" description="Clean up build location." >
+		<!-- Delete the ${build} directory tree -->
+		<delete dir="${smsg.build}"/>
+	</target>
+</project>
